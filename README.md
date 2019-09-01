@@ -76,6 +76,8 @@ Usage of ./download:
 
 把**下载器下载**的m3u8格式的视频转换成mp4格式。
 
+依赖ffmpeg。
+
 ```
 Usage of ./m3u8tomp4:
   -input string
