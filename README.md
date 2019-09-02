@@ -29,7 +29,7 @@ Usage of ./download:
 * -courseID 课程id。
 * -output 输出的目录。
 
-#### 获取cookie和课程id
+#### 获取视频课cookie和课程id
 
 打开“我的订阅”页面，点击“视频课”，再点击具体课程的“开始课程”按钮。
 
@@ -48,6 +48,18 @@ Usage of ./download:
 刷新页面，按照下图在开发者工具中找到**cookie**。
 
 ![cookie](./doc/cookie.jpg)
+
+#### 获取专栏cookie和课程id
+
+打开“我的订阅”页面，点击“专栏”，再点击具体课程的“开始课程”按钮。
+
+![zhuanlan](./doc/zhuanlan.jpg)
+
+通过打开开发者工具找到专利ID和cookie，见下图。
+
+![zhuanlan-id](./doc/zhuanlan-id.jpg)
+
+![zhuanlan-cookie](./doc/zhuanlan-cookie.jpg)
 
 ### 输出说明
 
