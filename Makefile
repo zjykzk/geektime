@@ -7,4 +7,7 @@ install: all
 clean:
 	rm -rf bin
 
+test:
+	go test . -v
+
 .PHONY : all install clean

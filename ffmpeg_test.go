@@ -5,7 +5,7 @@ import (
 	"testing"
 )
 
-func TestToMP4(t *testing.T) {
+func testToMP4(t *testing.T) {
 	m3u8Paths := listM3U8Paths("testdata")
 
 	outputPaths := make([]string, len(m3u8Paths))
