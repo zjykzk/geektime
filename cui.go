@@ -1,4 +1,4 @@
-package geektimedl
+package geektime
 
 import (
 	"fmt"
@@ -17,18 +17,21 @@ type progressCUI struct {
 	progressWidth int
 }
 
-func newProgressCUI(width int, p *progress) *progressCUI {
-	labelWidth := width / 5
+func newProgressCUI(width, nameWidth int, p *progress) *progressCUI {
+	name := simplify(p.name)
 	return &progressCUI{
-		label: p.name + strings.Repeat(" ", labelWidth-calcWidth(p.name)),
-
+		label:         name + strings.Repeat(" ", nameWidth-calcWidth(simplify(name))+1),
 		progress:      p,
-		progressWidth: width - labelWidth,
+		progressWidth: width - nameWidth - 1,
 	}
 }
 
 func calcWidth(s string) (w int) {
 	for _, c := range s {
+		if c == '“' || c == '”' {
+			return 2
+		}
+
 		switch l := utf8.RuneLen(c); l {
 		case 1, 2:
 			w++
@@ -63,9 +66,8 @@ type cui struct {
 	lineCount   int
 	currentLine int
 
-	updateChan      chan string
-	newProgressChan chan *progress
-	exitChan        chan struct{}
+	progressChan chan *progress
+	exitChan     chan struct{}
 }
 
 func newCUI() *cui {
@@ -73,54 +75,54 @@ func newCUI() *cui {
 	ws, err := unix.IoctlGetWinsize(syscall.Stdout, unix.TIOCGWINSZ)
 	if err == nil {
 		width = int(ws.Col)
-
 	}
 
 	return &cui{
-		width:           width,
-		updateChan:      make(chan string, 1024),
-		newProgressChan: make(chan *progress, 1024),
-		exitChan:        make(chan struct{}),
+		width:        width,
+		progressChan: make(chan *progress, 1024),
+		exitChan:     make(chan struct{}),
 	}
 }
 
 func (ui *cui) run() {
 	hideCursor()
+	defer showCursor()
 
 	go func() {
-	OUT:
 		for {
-			var line int
+		OUT:
 			select {
 			case <-ui.exitChan:
-				close(ui.newProgressChan)
-				close(ui.updateChan)
-				break OUT
-			case p := <-ui.newProgressChan:
-				ui.puis = append(ui.puis, newProgressCUI(ui.width, p))
-				line = len(ui.puis) - 1
-			case name := <-ui.updateChan:
-				line = ui.findLineNo(name)
+				return
+			case p, ok := <-ui.progressChan:
+				if !ok {
+					return
+				}
+
+				ui.drawLine(ui.findLineNo(p))
+				for _, p := range ui.puis {
+					if !p.progress.isEnd() {
+						break OUT
+					}
+				}
+				close(ui.exitChan)
 			}
 
-			ui.drawLine(line)
 		}
 	}()
 
 	ui.wait()
 	ui.drawLeft()
 	ui.moveTo(len(ui.puis))
-	showCursor()
 }
 
-func (ui *cui) findLineNo(name string) int {
-	for i, p := range ui.puis {
-		if p.progress.name == name {
+func (ui *cui) findLineNo(p *progress) int {
+	for i, p0 := range ui.puis {
+		if p0.progress == p {
 			return i
 		}
 	}
-
-	return -1
+	panic("cannot find progress:" + p.String())
 }
 
 func (ui *cui) moveTo(lineNo int) {
@@ -142,30 +144,39 @@ func (ui *cui) drawLine(lineNo int) {
 func (ui *cui) wait() {
 	select {
 	case <-ui.exitChan:
-		break
+		close(ui.progressChan)
 	case <-make(chan os.Signal, 1):
-		break
 	}
 }
 
 func (ui *cui) drawLeft() {
-	for p := range ui.newProgressChan {
-		ui.puis = append(ui.puis, newProgressCUI(ui.width, p))
-		ui.drawLine(len(ui.puis))
-	}
-	for n := range ui.updateChan {
-		ui.drawLine(ui.findLineNo(n))
+	for p := range ui.progressChan {
+		ui.drawLine(ui.findLineNo(p))
 	}
 }
 
 func (ui *cui) subscribeEvents(bus *bus) {
-	bus.subscribe(eventUINewProgress, func(v interface{}) {
-		ui.newProgressChan <- v.(*progress)
-	})
 	bus.subscribe(eventUIUpdateProgress, func(v interface{}) {
-		ui.updateChan <- v.(string)
+		ui.progressChan <- v.(*progress)
 	})
-	bus.subscribe(eventUIProgressEnd, func(interface{}) {
-		close(ui.exitChan)
+
+	bus.subscribe(eventUIProgressTotal, func(v interface{}) {
+		ps := v.([]*progress)
+		ui.puis = make([]*progressCUI, len(ps))
+		width := calcMaxWidth(ps)
+		for i, p := range ps {
+			ui.puis[i] = newProgressCUI(ui.width, width, p)
+			ui.drawLine(i)
+		}
 	})
+}
+
+func calcMaxWidth(ps []*progress) (maxWidth int) {
+	for _, p := range ps {
+		w := calcWidth(p.name)
+		if maxWidth < w {
+			maxWidth = w
+		}
+	}
+	return
 }

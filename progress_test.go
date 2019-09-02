@@ -1,7 +1,8 @@
-package geektimedl
+package geektime
 
 import (
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -20,17 +21,23 @@ func TestCourseProgress(t *testing.T) {
 	bus := &bus{}
 	cp := newProgress(bus)
 
-	cp.subscribeEvents(bus)
+	cp.subscribeEvents()
 
-	bus.post(eventArticles, articles{articles: []article{article{VideoID: "1"}, article{VideoID: "2"}}})
-	bus.post(eventM3U8Parsed, m3u8{videoID: "1", ts: []string{"1"}})
-	bus.post(eventM3U8Parsed, m3u8{videoID: "2", ts: []string{"2"}})
+	bus.post(eventCourse, courseRet{course{"TestCourseProgress", 2}, nil})
+	bus.post(eventArticles, articles{articles: []article{article{Title: "a1", ID: 1}, article{Title: "a2", ID: 2}}})
+	bus.post(eventM3U8Parsed, m3u8{articleID: 1, ts: []string{"1"}})
+	bus.post(eventM3U8Parsed, m3u8{articleID: 2, ts: []string{"2"}})
 	assert.False(t, cp.isEnd())
 
 	go func() {
-		bus.post(eventDownloadTS, downloadTS{videoID: "2"})
-		bus.post(eventDownloadTS, downloadTS{videoID: "1"})
+		bus.post(eventDownloadTS, downloadTS{articleID: 2})
+		bus.post(eventDownloadTS, downloadTS{articleID: 1})
 	}()
 
-	cp.await()
+	start := time.Now()
+	for !cp.isEnd() {
+		if time.Since(start) > time.Second {
+			t.Fatal("timeout")
+		}
+	}
 }

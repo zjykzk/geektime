@@ -1,9 +1,10 @@
-package geektimedl
+package geektime
 
 import (
 	"fmt"
 	"io"
 	"os"
+	"path/filepath"
 )
 
 type logger struct {
@@ -11,6 +12,11 @@ type logger struct {
 }
 
 func newLogger(name string) (*logger, error) {
+	err := makeSureDirExist(filepath.Dir(name))
+	if err != nil {
+		return nil, err
+	}
+
 	f, err := os.Create(name)
 	if err != nil {
 		return nil, err

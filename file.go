@@ -1,4 +1,4 @@
-package geektimedl
+package geektime
 
 import "os"
 

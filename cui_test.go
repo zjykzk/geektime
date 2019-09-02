@@ -1,4 +1,4 @@
-package geektimedl
+package geektime
 
 import (
 	"sync"
@@ -8,7 +8,7 @@ import (
 
 func TestProgressCUI(t *testing.T) {
 	p := &progress{name: "label", total: 100}
-	ui := newProgressCUI(100, p)
+	ui := newProgressCUI(100, 10, p)
 	t.Log(ui.content())
 	p.advance(10)
 	t.Log(ui.content())
@@ -22,23 +22,21 @@ func TestCUI(t *testing.T) {
 
 	var wg sync.WaitGroup
 
-	pg := func(name string, total int32) {
-		p := &progress{name: name, total: total}
-		bus.post(eventUINewProgress, p)
-		for i := int32(0); i < total; i++ {
+	ps := []*progress{{name: "label", total: 200}, {name: "LABEL", total: 100}}
+
+	bus.post(eventUIProgressTotal, ps)
+	pg := func(index int) {
+		p := ps[index]
+		for i := int32(0); i < p.total; i++ {
 			time.Sleep(time.Millisecond * 10)
 			p.advance(1)
-			bus.post(eventUIUpdateProgress, nil)
+			bus.post(eventUIUpdateProgress, p)
 		}
 		wg.Done()
 	}
 
 	wg.Add(2)
-	go pg("label", 200)
-	go pg("LABEL", 100)
-	go func() {
-		wg.Wait()
-		bus.post(eventUIProgressEnd, nil)
-	}()
+	go pg(0)
+	go pg(1)
 	cui.run()
 }

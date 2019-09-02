@@ -1,4 +1,4 @@
-package geektimedl
+package geektime
 
 import (
 	"fmt"
@@ -12,6 +12,7 @@ const (
 	eventCourse event = iota
 	// eventArticles articles is fetched
 	eventArticles
+	eventArticleFinished
 	// eventArticleVideo get the video information of the article
 	eventArticleVideo
 	// eventPlayAuth get the play auth
@@ -22,16 +23,29 @@ const (
 	eventDownloadTS
 	// eventM3U8Parsed the m3u8 file is parsed
 	eventM3U8Parsed
-	eventCreateVideoFoldFailed
+	eventCreateArticleFoldFailed
 
-	eventUINewProgress
 	eventUIUpdateProgress
-	eventUIProgressEnd
+	eventUIProgressTotal
 
 	eventCount
 )
 
-var eventNames = []string{"course", "articles", "articleVideo", "playAuth", "playList", "downloadTS", "m3u8Parsed", "createVideoFoldFailed"}
+var (
+	eventNames = []string{
+		"course",
+		"articles",
+		"articleFinished",
+		"articleVideo",
+		"playAuth",
+		"playList",
+		"downloadTS",
+		"m3u8Parsed",
+		"createVideoFoldFailed",
+		"uiUpdateProgress",
+		"uiProgressTotal",
+	}
+)
 
 func (e event) String() string {
 	return eventNames[e]
@@ -88,38 +102,44 @@ func (av articleVideo) String() string {
 }
 
 type playAuth struct {
-	auth    videoPlayAuth
-	videoID string
-	err     error
+	auth      videoPlayAuth
+	articleID int
+	videoID   string
+	err       error
 }
 
 func (p playAuth) String() string {
 	as := fmt.Sprintf("%+v", p.auth)
-	return fmt.Sprintf("playAuth:[auth:%s,videoID:%s,error:%s]", as, p.videoID, errMsg(p.err))
+	return fmt.Sprintf(
+		"playAuth:[auth:%s,artilceID:%d,videoID:%s,error:%s]",
+		as, p.articleID, p.videoID, errMsg(p.err),
+	)
 }
 
 type playListRet struct {
-	list playList
-	err  error
+	list      playList
+	articleID int
+	err       error
 }
 
 func (p playListRet) String() string {
 	ls := fmt.Sprintf("%+v", p.list)
-	return fmt.Sprintf("playListRet:[list:%s,error:%s]", ls, errMsg(p.err))
+	return fmt.Sprintf("playListRet:[list:%s,articleID:%d,error:%s]", ls, p.articleID, errMsg(p.err))
 }
 
 type downloadTS struct {
-	url, videoID string
-	err          error
+	url       string
+	articleID int
+	err       error
 }
 
 func (d downloadTS) String() string {
-	return fmt.Sprintf("downloadTS:[videoID:%s,url:%s,error:%s", d.videoID, d.url, errMsg(d.err))
+	return fmt.Sprintf("downloadTS:[articleID:%d,url:%s,error:%s", d.articleID, d.url, errMsg(d.err))
 }
 
 type m3u8 struct {
 	name      string
-	videoID   string
+	articleID int
 	ts        []string
 	m3u8URL   string
 	outputDir string
@@ -128,8 +148,8 @@ type m3u8 struct {
 
 func (m m3u8) String() string {
 	return fmt.Sprintf(
-		"m3u8:[videoID:%s,ts count:%d,m3u8URL:%s,outputDir:%s,error:%s]",
-		m.videoID, len(m.ts), m.m3u8URL, m.outputDir, errMsg(m.err),
+		"m3u8:[name:%s,articleID:%d,ts count:%d,m3u8URL:%s,outputDir:%s,error:%s]",
+		m.name, m.articleID, len(m.ts), m.m3u8URL, m.outputDir, errMsg(m.err),
 	)
 }
 

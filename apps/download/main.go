@@ -5,7 +5,7 @@ import (
 	"flag"
 	"fmt"
 
-	geektimedl "github.com/geektime-dl"
+	"github.com/geektime"
 )
 
 var (
@@ -26,9 +26,10 @@ func main() {
 		return
 	}
 
-	downloader, err := geektimedl.NewDownloader(geektimedl.Config{
-		CourseID: courseID,
-		Cookie:   cookie,
+	downloader, err := geektime.NewDownloader(geektime.Config{
+		CourseID:  courseID,
+		Cookie:    cookie,
+		OutputDir: outputDir,
 	})
 
 	if err != nil {

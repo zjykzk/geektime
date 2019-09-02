@@ -1,4 +1,4 @@
-package geektimedl
+package geektime
 
 import (
 	"path/filepath"
@@ -48,24 +48,25 @@ type playAuthFetcher struct {
 
 func (f *playAuthFetcher) run() {
 	auth, err := fetchVideoPlayAuth(f.videoPlayAuthURL, f.cookie, f.articleID, 1, f.videoID)
-	f.bus.post(eventPlayAuth, playAuth{auth, f.videoID, err})
+	f.bus.post(eventPlayAuth, playAuth{auth, f.articleID, f.videoID, err})
 }
 
 type playListFetcher struct {
 	bus                  *bus
+	articleID            int
 	playListURL, videoID string
 	auth                 videoPlayAuth
 }
 
 func (f *playListFetcher) run() {
 	l, err := fetchPlayList(f.playListURL, f.videoID, f.auth)
-	f.bus.post(eventPlayList, playListRet{l, err})
+	f.bus.post(eventPlayList, playListRet{l, f.articleID, err})
 }
 
 type m3u8Fetcher struct {
 	bus       *bus
 	name      string
-	videoID   string
+	articleID int
 	urls      []string
 	outputDir string
 }
@@ -84,7 +85,7 @@ func (f *m3u8Fetcher) run() {
 	}
 
 	if err != nil {
-		f.bus.post(eventM3U8Parsed, m3u8{err: err})
+		f.bus.post(eventM3U8Parsed, m3u8{articleID: f.articleID, err: err})
 		return
 	}
 
@@ -92,13 +93,13 @@ func (f *m3u8Fetcher) run() {
 
 	ts, err := parseM3u8(path)
 	if err != nil {
-		f.bus.post(eventM3U8Parsed, m3u8{err: err})
+		f.bus.post(eventM3U8Parsed, m3u8{articleID: f.articleID, err: err})
 		return
 	}
 
 	f.bus.post(eventM3U8Parsed, m3u8{
 		name:      f.name,
-		videoID:   f.videoID,
+		articleID: f.articleID,
 		ts:        ts,
 		m3u8URL:   url,
 		outputDir: f.outputDir,
@@ -107,11 +108,11 @@ func (f *m3u8Fetcher) run() {
 
 type tsDownloader struct {
 	bus            *bus
-	videoID        string
+	articleID      int
 	url, outputDir string
 }
 
 func (d *tsDownloader) run() {
 	_, err := download(d.url, d.outputDir)
-	d.bus.post(eventDownloadTS, downloadTS{d.url, d.videoID, err})
+	d.bus.post(eventDownloadTS, downloadTS{d.url, d.articleID, err})
 }

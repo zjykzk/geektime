@@ -1,4 +1,4 @@
-package geektimedl
+package geektime
 
 import (
 	"errors"
@@ -34,25 +34,15 @@ func (p *progress) isEnd() bool {
 type courseProgress struct {
 	bus *bus
 
-	videoProgresses sync.Map // video id -> *progress
-	progress        progress
+	articleProgresses sync.Map // artice id -> *progress
+	progress          progress
 
-	videos sync.Map // video id -> articleVideo
-
-	finished chan struct{}
-}
-
-func (cp *courseProgress) videoName(videoID string) (string, bool) {
-	v, ok := cp.videos.Load(videoID)
-	if !ok {
-		return "", false
-	}
-	return v.(articleVideo).name, true
+	articles sync.Map // article id -> articleVideo
 }
 
 func (cp *courseProgress) isEnd() bool {
 	ok := true
-	cp.videoProgresses.Range(func(_, v interface{}) bool {
+	cp.articleProgresses.Range(func(_, v interface{}) bool {
 		if !v.(*progress).isEnd() {
 			ok = false
 			return false
@@ -63,17 +53,12 @@ func (cp *courseProgress) isEnd() bool {
 	return ok
 }
 
-func (cp *courseProgress) await() {
-	<-cp.finished
-}
-
 func (cp *courseProgress) advance(d int32) {
 	cp.progress.advance(d)
 }
 
 func (cp *courseProgress) abort(err error) {
 	cp.progress.abort(err)
-	cp.tryEnd()
 }
 
 func (cp *courseProgress) subscribeEvents() {
@@ -95,31 +80,46 @@ func (cp *courseProgress) subscribeEvents() {
 			return
 		}
 
-		for _, a := range as.articles {
+		ps := make([]*progress, len(as.articles))
+		for i, a := range as.articles {
 			p := &progress{name: a.Title, total: 1}
-			cp.videoProgresses.Store(a.VideoID, p)
-			cp.bus.post(eventUINewProgress, p)
+			cp.articleProgresses.Store(a.ID, p)
+			ps[i] = p
 		}
+		b.post(eventUIProgressTotal, ps)
+	})
+
+	b.subscribe(eventArticleFinished, func(v interface{}) {
+		articleID := v.(int)
+		v, ok := cp.articleProgresses.Load(v)
+		if !ok {
+			panic(fmt.Sprintf("[BUG] article progress not exist:%d", articleID))
+		}
+
+		p := v.(*progress)
+		p.advance(1)
+		b.post(eventUIUpdateProgress, p)
+
+		cp.advance(1)
 	})
 
 	b.subscribe(eventArticleVideo, func(v interface{}) {
 		av := v.(articleVideo)
 		if av.err == nil {
-			cp.videos.LoadOrStore(av.id, av)
+			cp.articles.LoadOrStore(av.articleID, av)
 			return
 		}
 
-		v, ok := cp.videoProgresses.Load(av.id)
+		v, ok := cp.articleProgresses.Load(av.articleID)
 		if !ok {
-			panic("[BUG] vide progress not exist:" + av.id)
+			panic(fmt.Sprintf("[BUG] article progress not exist:%d", av.articleID))
 		}
 
 		p := v.(*progress)
-		p.abort(wrapErr("fetch video", av.err))
-		cp.bus.post(eventUIUpdateProgress, p.name)
+		p.abort(wrapErr("fetch article video", av.err))
+		b.post(eventUIUpdateProgress, p)
 
 		cp.advance(1)
-		cp.tryEnd()
 	})
 
 	b.subscribe(eventPlayAuth, func(v interface{}) {
@@ -128,69 +128,68 @@ func (cp *courseProgress) subscribeEvents() {
 			return
 		}
 
-		v, ok := cp.videoProgresses.Load(pa.videoID)
+		v, ok := cp.articleProgresses.Load(pa.articleID)
 		if !ok {
-			panic("[BUG] vide progress not exist:" + pa.videoID)
+			panic(fmt.Sprintf("[BUG] article progress not exist:%d", pa.articleID))
 		}
 
 		p := v.(*progress)
 		p.abort(wrapErr("play auth", pa.err))
-		cp.bus.post(eventUIUpdateProgress, p.name)
+		b.post(eventUIUpdateProgress, p)
 
 		cp.advance(1)
-		cp.tryEnd()
 	})
 
 	b.subscribe(eventDownloadTS, func(v interface{}) {
-		videoID := v.(downloadTS).videoID
-		v, ok := cp.videoProgresses.Load(videoID)
+		articleID := v.(downloadTS).articleID
+		v, ok := cp.articleProgresses.Load(articleID)
 		if !ok {
-			panic("[BUG] vide progress not exist:" + videoID)
+			panic(fmt.Sprintf("[BUG] article progress not exist:%d", articleID))
 		}
 
 		p := v.(*progress)
 		p.advance(1)
-		cp.bus.post(eventUIUpdateProgress, p.name)
+		b.post(eventUIUpdateProgress, p)
 
 		if p.isEnd() {
 			cp.advance(1)
-			cp.tryEnd()
 		}
 	})
 
 	b.subscribe(eventM3U8Parsed, func(v interface{}) {
 		m := v.(m3u8)
-		v, ok := cp.videoProgresses.Load(m.videoID)
+		v, ok := cp.articleProgresses.Load(m.articleID)
 		if !ok {
-			panic("[BUG] vide progress not exist:" + m.videoID)
+			panic(fmt.Sprintf("[BUG] article progress not exist:%s", m))
 		}
 
 		p := v.(*progress)
-		p.name, p.total = m.name, int32(len(m.ts))
-		cp.bus.post(eventUIUpdateProgress, p.name)
+		if m.err == nil {
+			p.name, p.total = m.name, int32(len(m.ts))
+		} else {
+			p.abort(fmt.Errorf("m3u8 parsed error:%s", m.err))
+			cp.advance(1)
+		}
+
+		b.post(eventUIUpdateProgress, p)
 	})
 
-	b.subscribe(eventCreateVideoFoldFailed, func(v interface{}) {
-		v, ok := cp.videoProgresses.Load(v)
+	b.subscribe(eventCreateArticleFoldFailed, func(v interface{}) {
+		v, ok := cp.articleProgresses.Load(v)
 		if !ok {
-			panic("[BUG] vide progress not exist:" + v.(string))
+			panic(fmt.Sprintf("[BUG] article progress not exist:%s", v))
 		}
 
 		p := v.(*progress)
-		p.abort(errors.New("create video fold failed"))
-		cp.bus.post(eventUIUpdateProgress, p.name)
-	})
-}
+		p.abort(errors.New("create article fold failed"))
+		b.post(eventUIUpdateProgress, p)
 
-func (cp *courseProgress) tryEnd() {
-	if cp.progress.isEnd() {
-		cp.bus.post(eventUIProgressEnd, nil)
-		close(cp.finished)
-	}
+		cp.advance(1)
+	})
 }
 
 func newProgress(bus *bus) *courseProgress {
-	return &courseProgress{bus: bus, finished: make(chan struct{})}
+	return &courseProgress{bus: bus}
 }
 
 func wrapErr(msg string, err error) error {

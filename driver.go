@@ -1,4 +1,4 @@
-package geektimedl
+package geektime
 
 import (
 	"errors"
@@ -121,15 +121,42 @@ func (p *driver) onActicles(as articles) {
 	}
 
 	for _, a := range as.articles {
-		p.apiExecutor.execute(&articleVideoFetcher{
-			bus:        p.bus,
-			articleURL: p.ArticleURL,
-			courseID:   p.CourseID,
-			cookie:     p.Cookie,
-			articleID:  a.ID,
-			videoID:    a.VideoID,
-		})
+		if isAudio(a) {
+			p.procAudit(a)
+		} else if a.VideoID != "" {
+			p.apiExecutor.execute(&articleVideoFetcher{
+				bus:        p.bus,
+				articleURL: p.ArticleURL,
+				courseID:   p.CourseID,
+				cookie:     p.Cookie,
+				articleID:  a.ID,
+				videoID:    a.VideoID,
+			})
+		} else {
+			p.bus.post(eventArticleFinished, a.ID)
+		}
 	}
+}
+
+func (p *driver) procAudit(a article) {
+	outputDir := filepath.Join(p.OutputDir, p.course.Title, simplify(a.Title))
+	err := makeSureDirExist(outputDir)
+	if err != nil {
+		p.bus.post(eventCreateArticleFoldFailed, a.ID)
+		return
+	}
+
+	p.apiExecutor.execute(&m3u8Fetcher{
+		p.bus,
+		a.Title,
+		a.ID,
+		[]string{a.AuditM3U8URL},
+		outputDir,
+	})
+}
+
+func isAudio(a article) bool {
+	return a.AuditM3U8URL != ""
 }
 
 func (p *driver) onActicleVideo(av articleVideo) {
@@ -139,7 +166,7 @@ func (p *driver) onActicleVideo(av articleVideo) {
 
 	err := makeSureDirExist(filepath.Join(p.OutputDir, p.course.Title, simplify(av.name)))
 	if err != nil {
-		p.bus.post(eventCreateVideoFoldFailed, av.id)
+		p.bus.post(eventCreateArticleFoldFailed, av.articleID)
 		return
 	}
 
@@ -148,7 +175,13 @@ func (p *driver) onActicleVideo(av articleVideo) {
 
 func (p *driver) onPlayAuth(pa playAuth) {
 	if pa.err == nil {
-		p.playAuthExecutor.execute(&playListFetcher{p.bus, p.PlayListURL, pa.videoID, pa.auth})
+		p.playAuthExecutor.execute(&playListFetcher{
+			p.bus,
+			pa.articleID,
+			p.PlayListURL,
+			pa.videoID,
+			pa.auth,
+		})
 	}
 }
 
@@ -166,8 +199,8 @@ func (p *driver) onPlayList(l playListRet) {
 
 	p.apiExecutor.execute(&m3u8Fetcher{
 		p.bus,
-		l.list.VideoBase.Title,
-		l.list.VideoBase.VideoID,
+		videoName,
+		l.articleID,
 		urls,
 		vp,
 	})
@@ -182,7 +215,7 @@ func (p *driver) onM3U8(m m3u8) {
 	for _, ts := range m.ts {
 		p.downloadExecutor.execute(&tsDownloader{
 			p.bus,
-			m.videoID,
+			m.articleID,
 			path + ts,
 			m.outputDir,
 		})
@@ -190,9 +223,15 @@ func (p *driver) onM3U8(m m3u8) {
 }
 
 func simplify(t string) string {
-	elts := strings.Split(t, "|")
-	for i, e := range elts {
-		elts[i] = strings.TrimSpace(e)
+	invalidChars := `| \:：*?？“”"，,()（）`
+
+	var nr []rune
+	for _, r := range t {
+
+		if strings.IndexRune(invalidChars, r) >= 0 {
+			continue
+		}
+		nr = append(nr, r)
 	}
-	return strings.Join(elts, "")
+	return string(nr)
 }

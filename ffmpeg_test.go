@@ -1,30 +1,9 @@
-package geektimedl
+package geektime
 
 import (
-	"os"
 	"path/filepath"
-	"strings"
 	"testing"
 )
-
-func listM3U8Paths(dir string) []string {
-	var m3u8Paths []string
-	filepath.Walk(dir, func(path string, info os.FileInfo, err error) error {
-		if err != nil {
-			return err
-		}
-
-		if info.IsDir() {
-			return nil
-		}
-
-		if strings.HasSuffix(path, ".m3u8") {
-			m3u8Paths = append(m3u8Paths, path)
-		}
-		return nil
-	})
-	return m3u8Paths
-}
 
 func TestToMP4(t *testing.T) {
 	m3u8Paths := listM3U8Paths("testdata")

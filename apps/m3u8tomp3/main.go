@@ -30,7 +30,7 @@ func main() {
 		return
 	}
 
-	c.ToMP4()
+	c.ToMP3()
 }
 
 func validParams() error {

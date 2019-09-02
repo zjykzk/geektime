@@ -1,4 +1,4 @@
-package geektimedl
+package geektime
 
 import (
 	"errors"
@@ -72,13 +72,13 @@ func doesDownloadAllTS(m3u8Path string) (bool, error) {
 	return true, nil
 }
 
-// M3U8ToMP4Converter converts the videos with the m3u8 format to the mp4
-type M3U8ToMP4Converter struct {
+// M3U8Converter converts the videos with the m3u8 format to the mp4
+type M3U8Converter struct {
 	outputDir, inputDir string
 }
 
-// NewM3U8ToMP4Converter creates the converter to convert the m3u8-video to the mp4
-func NewM3U8ToMP4Converter(inputDir, outputDir string) (*M3U8ToMP4Converter, error) {
+// NewM3U8Converter creates the converter to convert the m3u8-video to the mp4
+func NewM3U8Converter(inputDir, outputDir string) (*M3U8Converter, error) {
 	if inputDir == "" {
 		return nil, errors.New("empty input dir")
 	}
@@ -92,15 +92,31 @@ func NewM3U8ToMP4Converter(inputDir, outputDir string) (*M3U8ToMP4Converter, err
 		return nil, err
 	}
 
-	return &M3U8ToMP4Converter{outputDir, inputDir}, nil
+	return &M3U8Converter{outputDir, inputDir}, nil
 }
 
-// Run doing the  converting
-func (c *M3U8ToMP4Converter) Run() {
+// ToMP4 converts to the mp4 format
+func (c *M3U8Converter) ToMP4() {
+	c.convert(m3u8ToMP4, func(m3u8Path string) string {
+		return filepath.Join(c.outputDir, filepath.Base(filepath.Dir(m3u8Path))) + ".mp4"
+	})
+}
+
+// ToMP3 converts to the mp3 format
+func (c *M3U8Converter) ToMP3() {
+	c.convert(m3u8ToMP3, func(m3u8Path string) string {
+		return filepath.Join(c.outputDir, filepath.Base(filepath.Dir(m3u8Path))) + ".mp3"
+	})
+}
+
+func (c *M3U8Converter) convert(
+	convert func(in, out string) (string, error),
+	filename func(m3u8Path string) string,
+) {
 	for _, m := range listM3U8Paths(c.inputDir) {
-		outputPath := filepath.Join(c.outputDir, filepath.Base(filepath.Dir(m))) + ".mp4"
+		outputPath := filename(m)
 		fmt.Printf("convert %s, to %s\n", m, outputPath)
-		ret, err := m3u8ToMP4(m, outputPath)
+		ret, err := convert(m, outputPath)
 
 		msg := "success!"
 		if err != nil {

@@ -1,4 +1,4 @@
-package geektimedl
+package geektime
 
 import (
 	"crypto/hmac"
@@ -74,13 +74,18 @@ func fetchCourse(introURL, courseID, cookie string) (c course, err error) {
 }
 
 type article struct {
-	ID      int    `json:"id"`
-	VideoID string `json:"video_id"`
-	Title   string `json:"article_title"`
+	ID           int    `json:"id"`
+	VideoID      string `json:"video_id"`
+	Title        string `json:"article_title"`
+	AuditM3U8URL string `json:"audio_url"`
+	MP3URL       string `json:"audio_download_url"`
 }
 
 func (a article) String() string {
-	return fmt.Sprintf("article:[id:%d,videoID:%s,title:%s]", a.ID, a.VideoID, a.Title)
+	return fmt.Sprintf(
+		"article:[id:%d,videoID:%s,title:%s,auditM3U8URL:%s,mp3URL:%s]",
+		a.ID, a.VideoID, a.Title, a.AuditM3U8URL, a.MP3URL,
+	)
 }
 
 func fetchArticles(articlesURL, courseID, cookie string) ([]article, error) {
@@ -434,11 +439,6 @@ func download(url, outDir string) (string, error) {
 	}
 
 	data, err := readDataAndCloseResp(resp)
-	if err != nil {
-		return "", err
-	}
-
-	err = makeSureDirExist(outDir)
 	if err != nil {
 		return "", err
 	}

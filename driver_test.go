@@ -1,13 +1,10 @@
-package geektimedl
+package geektime
 
 import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
-	"os"
-	"path/filepath"
 	"strings"
-	"sync/atomic"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -78,62 +75,9 @@ fd09bcb049dc5d166ac20b031cb92a9f-2.ts`
 
 func TestSimplify(t *testing.T) {
 	assert.Equal(t, "02Python的发展历史与版本", simplify("02 | Python的发展历史与版本"))
-}
-
-type afterDownloadM3u8 struct {
-	count int32
-}
-
-func (a *afterDownloadM3u8) handle(_ interface{}, err error) {
-	if err == nil {
-		atomic.AddInt32(&a.count, 1)
-	}
-}
-
-func TestDriver(t *testing.T) {
-	server := newFakeServer(t)
-	defer server.Close()
-
-	p, err := newDriver(Config{
-		ArticlesURL:      server.URL + "/articles",
-		ArticleURL:       server.URL + "/article",
-		IntroURL:         server.URL + "/intro",
-		VideoPlayAuthURL: server.URL + "/playAuth",
-		CourseID:         "test course id",
-		OutputDir:        "testdata",
-		Cookie:           "test cookie",
-	}, &bus{})
-
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	p.Start()
-	p.Abort()
-
-	ok, err := isExist(filepath.Join(p.OutputDir, "test column"))
-	assert.Nil(t, err)
-	assert.True(t, ok)
-
-	ok, err = isExist(filepath.Join(p.OutputDir, "test column", "test article"))
-	assert.Nil(t, err)
-	assert.True(t, ok)
-
-	defer os.RemoveAll(filepath.Join(p.OutputDir, "test column"))
-}
-
-func isExist(path string) (bool, error) {
-	f, err := os.Open(path)
-	if err == nil {
-		f.Close()
-		return true, nil
-	}
-
-	if os.IsNotExist(err) {
-		return false, nil
-	}
-
-	return false, err
+	assert.Equal(t, "30答疑文章二用动态的观点看加锁", simplify("30 | 答疑文章（二）：用动态的观点看加锁"))
+	invalidChars := `\:：*?？“”"，,`
+	assert.Equal(t, "", simplify(invalidChars))
 }
 
 func testDownload(t *testing.T) {
