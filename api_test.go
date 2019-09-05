@@ -6,7 +6,7 @@ import (
 )
 
 func TestOnlineAPI(t *testing.T) {
-	cookie := "GCID=0326b6b-9a5dacc-ed688ec-162b3dc; expires=Fri, 04-Oct-2019 11:09:29 GMT; Max-Age=2592000; path=/; domain=.geekbang.org; HttpOnly GCESS=BAsCBAAIAQMMAQEGBEAunYkJAQEHBMdmi90CBGmbb10FBAAAAAABBKV3DwADBGmbb10EBAAvDQAKBAAAAAA-; expires=Sat, 14-Sep-2019 11:09:29 GMT; Max-Age=864000; path=/; domain=.geekbang.org; HttpOnly SERVERID=1fa1f330efedec1559b3abbcb6e30f50|1567595369|1567595313;Path=/"
+	cookie := "SERVERID=3431a294a18c59fc8f5805662e2bd51e|1567660915|1567660915;;GCID=69e4831-a62deff-8ca13c7-4e06a82; expires=Sat, 05-Oct-2019 05:22:00 GMT; Max-Age=2591999; path=/; domain=.geekbang.org;GCESS=BAcEhV6o_QIEvZtwXQQEAC8NAAgBAwEEpXcPAAkBAQsCBAAGBNpU._gDBL2bcF0MAQEKBAAAAAAFBAAAAAA-; expires=Sun, 15-Sep-2019 05:23:09 GMT; Max-Age=864000; path=/; domain=.geekbang.org;"
 
 	t.Log(fetchCourse(defaultIntroURL, "98", cookie))
 	t.Log(fetchArticles(defaultArticlesURL, "98", cookie))
@@ -29,4 +29,14 @@ func TestFetchM3U8(t *testing.T) {
 	t.Log(parseM3u8(m3u8Filename))
 
 	os.RemoveAll("testdata/fetchM3U8")
+}
+
+func TestLogin(t *testing.T) {
+	//cookie, err := sendSMSCode("13524581737")
+	//t.Log(cookie, err)
+	t.Log(login("SERVERID=3431a294a18c59fc8f5805662e2bd51e|1567660915|1567660915;;GCID=69e4831-a62deff-8ca13c7-4e06a82; expires=Sat, 05-Oct-2019 05:22:00 GMT; Max-Age=2591999; path=/; domain=.geekbang.org;", "13524581737", "587715"))
+}
+
+func TestAllCoursesBought(t *testing.T) {
+	t.Log(allCoursesBought(defaultAllBoughtURL, "GCID=94f2a1a-fb688cd-2f10228-c69936a; _ga=GA1.2.223491743.1565588313; _gid=GA1.2.1720172199.1567569814; GCESS=BAYEMN2sUwkBAQsCBAABBKV3DwAMAQEHBKFFcNQKBAAAAAAFBAAAAAADBKStcF0IAQMCBKStcF0EBAAvDQA-; SERVERID=1fa1f330efedec1559b3abbcb6e30f50|1567671630|1567671630"))
 }

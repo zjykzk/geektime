@@ -15,8 +15,8 @@
 ```
 ./download -h
 Usage of ./download:
-  -courseID string
-        course id
+  -course string
+        course name
   -output string
         output dir (default ".")
   -phone string
@@ -25,35 +25,9 @@ Usage of ./download:
 
 ### 参数说明
 
-* -courseID 课程id。
+* -course 课程名称。
 * -output 输出的目录。
 * -phone 手机号码。
-
-#### 获取视频课课程id
-
-打开“我的订阅”页面，点击“视频课”，再点击具体课程的“开始课程”按钮。
-
-![my order](./doc/my-order.jpg)
-
-
-
-打开新页面以后，地址栏上面中最后的数字就是**课程ID**。
-
-![course id](./doc/course-id.jpg)
-
-在打开开发者工具。
-
-![dev-tool](./doc/dev-tool.jpg)
-
-#### 获取专栏课程id
-
-打开“我的订阅”页面，点击“专栏”，再点击具体课程的“开始课程”按钮。
-
-![zhuanlan](./doc/zhuanlan.jpg)
-
-通过打开开发者工具找到专利ID和cookie，见下图。
-
-![zhuanlan-id](./doc/zhuanlan-id.jpg)
 
 ### 输出说明
 

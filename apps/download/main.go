@@ -9,13 +9,13 @@ import (
 )
 
 var (
-	courseID  string
+	course    string
 	cellPhone string
 	outputDir string
 )
 
 func init() {
-	flag.StringVar(&courseID, "courseID", "", "course id")
+	flag.StringVar(&course, "course", "", "course name")
 	flag.StringVar(&cellPhone, "phone", "", "the cell phone")
 	flag.StringVar(&outputDir, "output", ".", "output dir")
 }
@@ -26,10 +26,9 @@ func main() {
 		return
 	}
 
-	downloader, err := geektime.NewDownloader(geektime.Config{
-		CourseID:  courseID,
-		OutputDir: outputDir,
-	}, cellPhone)
+	downloader, err := geektime.NewDownloader(
+		geektime.Config{OutputDir: outputDir}, cellPhone, course,
+	)
 
 	if err != nil {
 		fmt.Printf("create pipelie error:%s\n", err)
@@ -44,8 +43,8 @@ func main() {
 
 func parseParams() error {
 	flag.Parse()
-	if courseID == "" {
-		return errors.New("empty course id")
+	if course == "" {
+		return errors.New("empty course name")
 	}
 
 	if cellPhone == "" {

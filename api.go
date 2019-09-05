@@ -16,6 +16,7 @@ import (
 
 const (
 	accountURL              = "https://account.geekbang.org/signin"
+	defaultAllBoughtURL     = "https://time.geekbang.org/serv/v1/my/products/all"
 	defaultSendSMSCodeURL   = "https://account.geekbang.org/account/sms/code"
 	defaultSMSLogin         = "https://account.geekbang.org/account/sms/login"
 	defaultArticlesURL      = "https://time.geekbang.org/serv/v1/column/articles"
@@ -28,6 +29,7 @@ const (
 type course struct {
 	Title        string `json:"column_title"`
 	ArticleCount int    `json:"article_count"`
+	ID           int    `json:"column_id"`
 }
 
 func (c *course) String() string {
@@ -553,4 +555,65 @@ func responseCode(data []byte) (int, error) {
 	}
 
 	return d.Code, nil
+}
+
+func allCoursesBought(url, cookie string) (map[int][]course, error) {
+	req, err := http.NewRequest(http.MethodPost, url, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	fillHeaders(cookie, req.Header)
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return nil, err
+	}
+
+	err = check(resp)
+	if err != nil {
+		return nil, err
+	}
+
+	data, err := readDataAndCloseResp(resp)
+	if err != nil {
+		return nil, err
+	}
+
+	var d struct {
+		Data []struct {
+			Courses []struct {
+				Course course `json:"extra"`
+			} `json:"list"`
+			ID int `json:"id"`
+		} `json:"data"`
+		Code int `json:"code"`
+	}
+
+	err = json.Unmarshal(data, &d)
+	if err != nil {
+		fmt.Printf("%s\n", string(data))
+		return nil, err
+	}
+
+	if d.Code != 0 {
+		err = errors.New("play auth error:" + string(data))
+		return nil, err
+	}
+
+	err = json.Unmarshal(data, &d)
+	if err != nil {
+		return nil, err
+	}
+
+	coursesOfID := make(map[int][]course, len(d.Data))
+	for _, d := range d.Data {
+		courses := make([]course, len(d.Courses))
+		for i, c := range d.Courses {
+			courses[i] = c.Course
+		}
+		coursesOfID[d.ID] = courses
+	}
+
+	return coursesOfID, nil
 }

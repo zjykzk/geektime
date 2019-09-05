@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 )
 
@@ -21,12 +22,12 @@ type Downloader struct {
 	logger   *logger
 	ui       *cui
 
-	cookie    string
 	cellPhone string
+	name      string
 }
 
 // NewDownloader creates the downloader
-func NewDownloader(conf Config, cellPhone string) (*Downloader, error) {
+func NewDownloader(conf Config, cellPhone, name string) (*Downloader, error) {
 	bus := &bus{}
 
 	logger, err := newLogger(filepath.Join(conf.OutputDir, "download.log"))
@@ -39,6 +40,7 @@ func NewDownloader(conf Config, cellPhone string) (*Downloader, error) {
 		bus:       bus,
 		progress:  newProgress(bus),
 		cellPhone: cellPhone,
+		name:      name,
 		logger:    logger,
 		ui:        newCUI(),
 	}, nil
@@ -47,6 +49,11 @@ func NewDownloader(conf Config, cellPhone string) (*Downloader, error) {
 // Run run the downloader
 func (d *Downloader) Run() error {
 	err := d.readCookie()
+	if err != nil {
+		return err
+	}
+
+	err = d.findCourseID()
 	if err != nil {
 		return err
 	}
@@ -85,6 +92,23 @@ func (d *Downloader) readCookieFromFile() error {
 	}
 	d.Cookie = strings.TrimSpace(string(data))
 	return nil
+}
+
+func (d *Downloader) findCourseID() error {
+	cs, err := allCoursesBought(defaultAllBoughtURL, d.Cookie)
+	if err != nil {
+		return nil
+	}
+
+	for _, c := range cs {
+		for _, i := range c {
+			if i.Title == d.name {
+				d.CourseID = strconv.Itoa(i.ID)
+				return nil
+			}
+		}
+	}
+	return fmt.Errorf(`no course of name:"%s"`, d.name)
 }
 
 func (d *Downloader) login() error {

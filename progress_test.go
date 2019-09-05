@@ -23,7 +23,7 @@ func TestCourseProgress(t *testing.T) {
 
 	cp.subscribeEvents()
 
-	bus.post(eventCourse, courseRet{course{"TestCourseProgress", 2}, nil})
+	bus.post(eventCourse, courseRet{course{"TestCourseProgress", 2, 1}, nil})
 	bus.post(eventArticles, articles{articles: []article{article{Title: "a1", ID: 1}, article{Title: "a2", ID: 2}}})
 	bus.post(eventM3U8Parsed, m3u8{articleID: 1, ts: []string{"1"}})
 	bus.post(eventM3U8Parsed, m3u8{articleID: 2, ts: []string{"2"}})
