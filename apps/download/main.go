@@ -10,13 +10,13 @@ import (
 
 var (
 	courseID  string
-	cookie    string
+	cellPhone string
 	outputDir string
 )
 
 func init() {
 	flag.StringVar(&courseID, "courseID", "", "course id")
-	flag.StringVar(&cookie, "cookie", "", "cookie after login")
+	flag.StringVar(&cellPhone, "phone", "", "the cell phone")
 	flag.StringVar(&outputDir, "output", ".", "output dir")
 }
 
@@ -28,16 +28,18 @@ func main() {
 
 	downloader, err := geektime.NewDownloader(geektime.Config{
 		CourseID:  courseID,
-		Cookie:    cookie,
 		OutputDir: outputDir,
-	})
+	}, cellPhone)
 
 	if err != nil {
 		fmt.Printf("create pipelie error:%s\n", err)
 		return
 	}
 
-	downloader.Run()
+	err = downloader.Run()
+	if err != nil {
+		fmt.Printf("download error:%s\n", err)
+	}
 }
 
 func parseParams() error {
@@ -46,8 +48,8 @@ func parseParams() error {
 		return errors.New("empty course id")
 	}
 
-	if cookie == "" {
-		return errors.New("empty cookie")
+	if cellPhone == "" {
+		return errors.New("empty cell phone")
 	}
 
 	return nil

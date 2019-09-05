@@ -42,17 +42,19 @@ func (f *articleVideoFetcher) run() {
 
 type playAuthFetcher struct {
 	bus                               *bus
+	name                              string
 	videoPlayAuthURL, videoID, cookie string
 	articleID                         int
 }
 
 func (f *playAuthFetcher) run() {
 	auth, err := fetchVideoPlayAuth(f.videoPlayAuthURL, f.cookie, f.articleID, 1, f.videoID)
-	f.bus.post(eventPlayAuth, playAuth{auth, f.articleID, f.videoID, err})
+	f.bus.post(eventPlayAuth, playAuth{auth, f.name, f.articleID, f.videoID, err})
 }
 
 type playListFetcher struct {
 	bus                  *bus
+	name                 string
 	articleID            int
 	playListURL, videoID string
 	auth                 videoPlayAuth
@@ -60,7 +62,7 @@ type playListFetcher struct {
 
 func (f *playListFetcher) run() {
 	l, err := fetchPlayList(f.playListURL, f.videoID, f.auth)
-	f.bus.post(eventPlayList, playListRet{l, f.articleID, err})
+	f.bus.post(eventPlayList, playListRet{l, f.name, f.articleID, err})
 }
 
 type m3u8Fetcher struct {

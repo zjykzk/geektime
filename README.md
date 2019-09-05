@@ -15,21 +15,21 @@
 ```
 ./download -h
 Usage of ./download:
-  -cookie string
-        cookie after login
   -courseID string
         course id
   -output string
         output dir (default ".")
+  -phone string
+        the cell phone
 ```
 
 ### 参数说明
 
-* -cookie 登入以后的cookie。
 * -courseID 课程id。
 * -output 输出的目录。
+* -phone 手机号码。
 
-#### 获取视频课cookie和课程id
+#### 获取视频课课程id
 
 打开“我的订阅”页面，点击“视频课”，再点击具体课程的“开始课程”按钮。
 
@@ -45,11 +45,7 @@ Usage of ./download:
 
 ![dev-tool](./doc/dev-tool.jpg)
 
-刷新页面，按照下图在开发者工具中找到**cookie**。
-
-![cookie](./doc/cookie.jpg)
-
-#### 获取专栏cookie和课程id
+#### 获取专栏课程id
 
 打开“我的订阅”页面，点击“专栏”，再点击具体课程的“开始课程”按钮。
 
@@ -58,8 +54,6 @@ Usage of ./download:
 通过打开开发者工具找到专利ID和cookie，见下图。
 
 ![zhuanlan-id](./doc/zhuanlan-id.jpg)
-
-![zhuanlan-cookie](./doc/zhuanlan-cookie.jpg)
 
 ### 输出说明
 
@@ -77,6 +71,7 @@ Usage of ./download:
         m3u8_addr
     ▸ ...
  ▸ download.log
+ ▸ cookie
 ```
 
 说明：
@@ -84,6 +79,7 @@ Usage of ./download:
 1. 一级目录是课程名字。
 2. 二级目录是课程中每课的序号加上名称（会过滤非法字符），二级目录中包含`.m3u8`/`.ts`文件。另外，二级目录中还包含了一个`m3u8_addr`文件，内容是`.m3u8`文件的地址。
 3. `downloag.log`下载的日志。
+4. `cookie`cookie的内容。
 
 ## m3u8格式转成mp4&mp3
 

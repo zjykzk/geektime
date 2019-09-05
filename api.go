@@ -15,6 +15,9 @@ import (
 )
 
 const (
+	accountURL              = "https://account.geekbang.org/signin"
+	defaultSendSMSCodeURL   = "https://account.geekbang.org/account/sms/code"
+	defaultSMSLogin         = "https://account.geekbang.org/account/sms/login"
 	defaultArticlesURL      = "https://time.geekbang.org/serv/v1/column/articles"
 	defaultArticleURL       = "https://time.geekbang.org/serv/v1/article"
 	defaultIntroURL         = "https://time.geekbang.org/serv/v1/column/intro"
@@ -461,4 +464,93 @@ func writeFile(path string, data []byte) error {
 
 	f.Write(data)
 	return f.Close()
+}
+
+func sendSMSCode(cellphone string) (cookie string, err error) {
+	req, err := http.NewRequest(http.MethodGet, accountURL, nil)
+	if err != nil {
+		return
+	}
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return
+	}
+
+	req, err = http.NewRequest(
+		http.MethodPost,
+		defaultSendSMSCodeURL,
+		strings.NewReader(fmt.Sprintf(
+			`{"country":86,"cellphone":"%s","captcha":""}`, cellphone,
+		)),
+	)
+	cookie = clearCookie(resp.Header.Get("Set-Cookie"))
+	fillHeaders(cookie, req.Header)
+	resp, err = http.DefaultClient.Do(req)
+	if err != nil {
+		return
+	}
+
+	data, err := readDataAndCloseResp(resp)
+	if err != nil {
+		return
+	}
+
+	code, err := responseCode(data)
+	if code != 0 {
+		err = errors.New(string(data))
+		return
+	}
+
+	cookie = cookie + ";" + clearCookie(resp.Header.Get("Set-Cookie"))
+	return
+}
+
+func clearCookie(c string) string {
+	c = strings.Replace(c, "HttpOnly", "", -1)
+	return strings.Replace(c, "path=/", "", -1)
+}
+
+func login(cookie, cellphone, code string) (updatedCookie string, err error) {
+	req, err := http.NewRequest(
+		http.MethodPost,
+		defaultSMSLogin,
+		strings.NewReader(fmt.Sprintf(
+			`{"country":86,"cellphone":"%s","code":"%s","ucode":"","platform":3,"appid":1,"remember":1}`,
+			cellphone, code,
+		)),
+	)
+
+	fillHeaders(cookie, req.Header)
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return
+	}
+
+	data, err := readDataAndCloseResp(resp)
+	if err != nil {
+		return
+	}
+
+	respCode, err := responseCode(data)
+	if respCode != 0 {
+		err = errors.New(string(data))
+		return
+	}
+
+	updatedCookie = cookie + clearCookie(resp.Header.Get("Set-Cookie"))
+	return
+}
+
+func responseCode(data []byte) (int, error) {
+	var d struct {
+		Code int `json:"code"`
+	}
+
+	err := json.Unmarshal(data, &d)
+	if err != nil {
+		return 0, err
+	}
+
+	return d.Code, nil
 }

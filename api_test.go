@@ -6,7 +6,7 @@ import (
 )
 
 func TestOnlineAPI(t *testing.T) {
-	cookie := "_ga=GA1.2.579002931.1565926025; GCID=5571b9d-d62bcc2-d94b2b8-627c523; modalclose=true; modalCloseDay=16; _gid=GA1.2.1309432447.1566809933; GCESS=BAUEAAAAAAcE4DLmeggBAwMEdJ9jXQkBAQYEVQ967AoEAAAAAAIEdJ9jXQsCBAAEBAAvDQABBKV3DwAMAQE-; Hm_lvt_022f847c4e3acd44d4a2481d9187f1e6=1566812553,1566870489,1566870540,1566870552; Hm_lpvt_022f847c4e3acd44d4a2481d9187f1e6=1566870552; SERVERID=3431a294a18c59fc8f5805662e2bd51e|1566870623|1566870488; _gat=1"
+	cookie := "GCID=0326b6b-9a5dacc-ed688ec-162b3dc; expires=Fri, 04-Oct-2019 11:09:29 GMT; Max-Age=2592000; path=/; domain=.geekbang.org; HttpOnly GCESS=BAsCBAAIAQMMAQEGBEAunYkJAQEHBMdmi90CBGmbb10FBAAAAAABBKV3DwADBGmbb10EBAAvDQAKBAAAAAA-; expires=Sat, 14-Sep-2019 11:09:29 GMT; Max-Age=864000; path=/; domain=.geekbang.org; HttpOnly SERVERID=1fa1f330efedec1559b3abbcb6e30f50|1567595369|1567595313;Path=/"
 
 	t.Log(fetchCourse(defaultIntroURL, "98", cookie))
 	t.Log(fetchArticles(defaultArticlesURL, "98", cookie))

@@ -66,7 +66,9 @@ func (cp *courseProgress) subscribeEvents() {
 	b.subscribe(eventCourse, func(v interface{}) {
 		c := v.(courseRet)
 		if c.err != nil {
+			b.post(eventUIProgressTotal, []*progress{&progress{name: c.course.Title, total: 1}})
 			cp.abort(wrapErr("fetch course", c.err))
+			b.post(eventUIUpdateProgress, &cp.progress)
 			return
 		}
 
@@ -76,7 +78,9 @@ func (cp *courseProgress) subscribeEvents() {
 	b.subscribe(eventArticles, func(v interface{}) {
 		as := v.(articles)
 		if as.err != nil {
+			b.post(eventUIProgressTotal, []*progress{&cp.progress})
 			cp.abort(wrapErr("fetch articles", as.err))
+			b.post(eventUIUpdateProgress, &cp.progress)
 			return
 		}
 

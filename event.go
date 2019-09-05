@@ -103,6 +103,7 @@ func (av articleVideo) String() string {
 
 type playAuth struct {
 	auth      videoPlayAuth
+	name      string
 	articleID int
 	videoID   string
 	err       error
@@ -111,20 +112,21 @@ type playAuth struct {
 func (p playAuth) String() string {
 	as := fmt.Sprintf("%+v", p.auth)
 	return fmt.Sprintf(
-		"playAuth:[auth:%s,artilceID:%d,videoID:%s,error:%s]",
-		as, p.articleID, p.videoID, errMsg(p.err),
+		"playAuth:[auth:%s,name:%s,artilceID:%d,videoID:%s,error:%s]",
+		as, p.name, p.articleID, p.videoID, errMsg(p.err),
 	)
 }
 
 type playListRet struct {
 	list      playList
+	name      string
 	articleID int
 	err       error
 }
 
 func (p playListRet) String() string {
 	ls := fmt.Sprintf("%+v", p.list)
-	return fmt.Sprintf("playListRet:[list:%s,articleID:%d,error:%s]", ls, p.articleID, errMsg(p.err))
+	return fmt.Sprintf("playListRet:[list:%s,name:%s,articleID:%d,error:%s]", ls, p.name, p.articleID, errMsg(p.err))
 }
 
 type downloadTS struct {

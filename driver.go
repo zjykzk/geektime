@@ -39,7 +39,7 @@ type driver struct {
 
 func newDriver(conf Config, bus *bus) (*driver, error) {
 	wrapErr := func(m string) error {
-		return errors.New("create pipeline error:" + m)
+		return errors.New("create driver error:" + m)
 	}
 
 	if conf.CourseID == "" {
@@ -164,19 +164,21 @@ func (p *driver) onActicleVideo(av articleVideo) {
 		return
 	}
 
-	err := makeSureDirExist(filepath.Join(p.OutputDir, p.course.Title, simplify(av.name)))
+	name := simplify(av.name)
+	err := makeSureDirExist(filepath.Join(p.OutputDir, p.course.Title, name))
 	if err != nil {
 		p.bus.post(eventCreateArticleFoldFailed, av.articleID)
 		return
 	}
 
-	p.apiExecutor.execute(&playAuthFetcher{p.bus, p.VideoPlayAuthURL, av.id, p.Cookie, av.articleID})
+	p.apiExecutor.execute(&playAuthFetcher{p.bus, name, p.VideoPlayAuthURL, av.id, p.Cookie, av.articleID})
 }
 
 func (p *driver) onPlayAuth(pa playAuth) {
 	if pa.err == nil {
 		p.playAuthExecutor.execute(&playListFetcher{
 			p.bus,
+			pa.name,
 			pa.articleID,
 			p.PlayListURL,
 			pa.videoID,
@@ -194,12 +196,11 @@ func (p *driver) onPlayList(l playListRet) {
 	for i, p := range l.list.PlayInfoList.PlayInfo {
 		urls[i] = p.PlayURL
 	}
-	videoName := l.list.VideoBase.Title
-	vp := filepath.Join(p.OutputDir, p.course.Title, simplify(videoName))
+	vp := filepath.Join(p.OutputDir, p.course.Title, l.name)
 
 	p.apiExecutor.execute(&m3u8Fetcher{
 		p.bus,
-		videoName,
+		l.name,
 		l.articleID,
 		urls,
 		vp,
