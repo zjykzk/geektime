@@ -1,4 +1,4 @@
-module geektime-dl
+module github.com/zjykzk/geektime
 
 go 1.12
 

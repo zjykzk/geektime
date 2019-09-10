@@ -5,7 +5,7 @@ import (
 	"flag"
 	"fmt"
 
-	"github.com/geektime"
+	"github.com/zjykzk/geektime"
 )
 
 var (
