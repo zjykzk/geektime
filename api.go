@@ -2,11 +2,13 @@ package geektime
 
 import (
 	"crypto/hmac"
+	"crypto/md5"
 	"crypto/sha1"
 	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io/ioutil"
 	"net/http"
 	"net/url"
 	"os"
@@ -23,7 +25,7 @@ const (
 	defaultArticleURL       = "https://time.geekbang.org/serv/v1/article"
 	defaultIntroURL         = "https://time.geekbang.org/serv/v1/column/intro"
 	defaultVideoPlayAuthURL = "https://time.geekbang.org/serv/v3/source_auth/video_play_auth"
-	defaultPlayListURL      = "https://vod.cn-beijing.aliyuncs.com/"
+	defaultPlayListURL      = "https://vod.cn-shanghai.aliyuncs.com/"
 )
 
 type course struct {
@@ -305,9 +307,11 @@ func fillHeaders(cookie string, header http.Header) {
 	header.Set("Accept-Language", "zh-CN,zh;q=0.9,en;q=0.8")
 	header.Set("User-Agent", "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/76.0.3809.100 Safari/537.36")
 	header.Set("Sec-Fetch-Mode", "cors")
+	header.Set("Sec-Fetch-Dest", "empty")
 	header.Set("Content-Type", "application/json")
 	header.Set("Accept", "application/json, text/plain, */*")
 	header.Set("Cache-Control", "no-cache")
+	header.Set("Referer", "https://time.geekbang.org/dashboard/course")
 	header.Set("Cookie", cookie)
 }
 
@@ -437,6 +441,13 @@ func buildStringToSign(method, query string) string {
 }
 
 func download(url, outDir string) (string, error) {
+
+	fn, existed, err := hasDownload(url, outDir)
+
+	if existed && err == nil {
+		return fn, nil
+	}
+
 	resp, err := http.Get(url)
 
 	if err != nil {
@@ -452,6 +463,33 @@ func download(url, outDir string) (string, error) {
 	err = writeFile(path, data)
 
 	return path, err
+}
+
+func hasDownload(url, outDir string) (string, bool, error) {
+
+	fn := outDir + string(os.PathSeparator) + filename(url)
+	if ok, err := fileExists(fn); !ok {
+		return fn, false, err
+	}
+
+	resp, err := http.DefaultClient.Head(url)
+	if err != nil {
+		return fn, false, err
+	}
+
+	resp.Body.Close()
+
+	md5V := resp.Header.Get("Content-MD5")
+	if md5V == "" {
+		return fn, false, nil
+	}
+
+	d, err := ioutil.ReadFile(fn)
+	if err != nil {
+		return fn, false, nil
+	}
+	md5C := md5.Sum(d)
+	return fn, base64.StdEncoding.EncodeToString(md5C[:]) == md5V, nil
 }
 
 func filename(url string) string {

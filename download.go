@@ -90,6 +90,7 @@ func (d *Downloader) readCookieFromFile() error {
 	if len(data) == 0 {
 		return errors.New("empty cookie from the file")
 	}
+	d.logger.print("read cookie from file" + string(data))
 	d.Cookie = strings.TrimSpace(string(data))
 	return nil
 }
@@ -97,7 +98,7 @@ func (d *Downloader) readCookieFromFile() error {
 func (d *Downloader) findCourseID() error {
 	cs, err := allCoursesBought(defaultAllBoughtURL, d.Cookie)
 	if err != nil {
-		return nil
+		return err
 	}
 
 	for _, c := range cs {

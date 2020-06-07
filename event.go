@@ -71,7 +71,7 @@ type courseRet struct {
 }
 
 func (c courseRet) String() string {
-	return fmt.Sprintf("course ret[course:%s, error:%s]", c.course.String(), errMsg(c.err))
+	return fmt.Sprintf("course ret[course:%s,%s]", c.course.String(), errMsg(c.err))
 }
 
 type articles struct {
@@ -84,7 +84,7 @@ func (a articles) String() string {
 	for i := range a.articles {
 		as[i] = a.articles[i].String()
 	}
-	return fmt.Sprintf("articles:[articles:{%s}, error:%s]", strings.Join(as, ","), errMsg(a.err))
+	return fmt.Sprintf("articles:[articles:{%s},%s]", strings.Join(as, ","), errMsg(a.err))
 }
 
 type articleVideo struct {
@@ -96,7 +96,7 @@ type articleVideo struct {
 
 func (av articleVideo) String() string {
 	return fmt.Sprintf(
-		"articleVideo:[articleID:%d,name:%s,videoID:%s,error:%s]",
+		"articleVideo:[articleID:%d,name:%s,videoID:%s,%s]",
 		av.articleID, av.name, av.id, errMsg(av.err),
 	)
 }
@@ -112,7 +112,7 @@ type playAuth struct {
 func (p playAuth) String() string {
 	as := fmt.Sprintf("%+v", p.auth)
 	return fmt.Sprintf(
-		"playAuth:[auth:%s,name:%s,artilceID:%d,videoID:%s,error:%s]",
+		"playAuth:[auth:%s,name:%s,artilceID:%d,videoID:%s,%s]",
 		as, p.name, p.articleID, p.videoID, errMsg(p.err),
 	)
 }
@@ -126,7 +126,7 @@ type playListRet struct {
 
 func (p playListRet) String() string {
 	ls := fmt.Sprintf("%+v", p.list)
-	return fmt.Sprintf("playListRet:[list:%s,name:%s,articleID:%d,error:%s]", ls, p.name, p.articleID, errMsg(p.err))
+	return fmt.Sprintf("playListRet:[list:%s,name:%s,articleID:%d,%s]", ls, p.name, p.articleID, errMsg(p.err))
 }
 
 type downloadTS struct {
@@ -136,7 +136,7 @@ type downloadTS struct {
 }
 
 func (d downloadTS) String() string {
-	return fmt.Sprintf("downloadTS:[articleID:%d,url:%s,error:%s", d.articleID, d.url, errMsg(d.err))
+	return fmt.Sprintf("downloadTS:[articleID:%d,url:%s,%s", d.articleID, d.url, errMsg(d.err))
 }
 
 type m3u8 struct {
@@ -150,14 +150,14 @@ type m3u8 struct {
 
 func (m m3u8) String() string {
 	return fmt.Sprintf(
-		"m3u8:[name:%s,articleID:%d,ts count:%d,m3u8URL:%s,outputDir:%s,error:%s]",
+		"m3u8:[name:%s,articleID:%d,ts count:%d,m3u8URL:%s,outputDir:%s,%s]",
 		m.name, m.articleID, len(m.ts), m.m3u8URL, m.outputDir, errMsg(m.err),
 	)
 }
 
 func errMsg(err error) string {
 	if err == nil {
-		return ""
+		return "suc"
 	}
-	return err.Error()
+	return "error:" + err.Error()
 }
